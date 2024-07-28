@@ -14,7 +14,7 @@ pub fn scan() -> Vec<HostInfo> {
     hosts
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct HostInfo {
     pub host: String,
     pub mac: Option<String>,

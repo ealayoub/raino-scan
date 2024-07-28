@@ -1,10 +1,10 @@
 use crate::net;
 use crate::tui;
 use net::HostInfo;
-use std::io;
 #[allow(unused_imports)]
 use ratatui::{
     backend::CrosstermBackend,
+    crossterm::event,
     crossterm::{
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -13,8 +13,8 @@ use ratatui::{
     style::*,
     widgets::*,
     Terminal,
-    crossterm::event,
 };
+use std::io;
 
 pub struct App {
     pub hosts: Vec<HostInfo>,
@@ -47,33 +47,27 @@ impl Drop for App {
 pub fn run_app(terminal: &mut tui::Tui, app: &mut App) -> io::Result<()> {
     loop {
         terminal.draw(|f| {
-            let chunks = ratatui::layout::Layout::default()
-                .direction(ratatui::layout::Direction::Horizontal)
-                .constraints(
-                    [
-                        ratatui::layout::Constraint::Percentage(30),
-                        ratatui::layout::Constraint::Percentage(70),
-                    ]
-                    .as_ref(),
-                )
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
                 .split(f.size());
 
-            let hosts: Vec<ratatui::widgets::ListItem> = app
+            let hosts: Vec<ListItem> = app
                 .hosts
                 .iter()
-                .map(|h| ratatui::widgets::ListItem::new(h.host.clone()))
+                .map(|h| {
+                    if app.hosts[app.selected_host] == *h {
+                        ListItem::new(h.host.clone()).fg(Color::Gray).bg(Color::Red)
+                    } else {
+                        ListItem::new(h.host.clone())
+                    }
+                })
                 .collect();
 
-            let hosts_list = ratatui::widgets::List::new(hosts)
-                .block(
-                    ratatui::widgets::Block::default()
-                        .borders(ratatui::widgets::Borders::ALL)
-                        .title("Hosts"),
-                )
+            let hosts_list = List::new(hosts)
+                .block(Block::default().borders(Borders::ALL).title("Hosts"))
                 .highlight_symbol(">>")
-                .highlight_style(
-                    ratatui::style::Style::default().add_modifier(ratatui::style::Modifier::BOLD),
-                );
+                .highlight_style(Style::default().add_modifier(Modifier::BOLD));
 
             f.render_widget(hosts_list, chunks[0]);
 
@@ -84,11 +78,8 @@ pub fn run_app(terminal: &mut tui::Tui, app: &mut App) -> io::Result<()> {
                     host.mac.as_deref().unwrap_or("N/A"),
                     host.vendor.as_deref().unwrap_or("N/A")
                 );
-                let details = ratatui::widgets::Paragraph::new(details).block(
-                    ratatui::widgets::Block::default()
-                        .borders(ratatui::widgets::Borders::ALL)
-                        .title("Host Details"),
-                );
+                let details = Paragraph::new(details)
+                    .block(Block::default().borders(Borders::ALL).title("Host Details"));
                 f.render_widget(details, chunks[1]);
             }
         })?;
